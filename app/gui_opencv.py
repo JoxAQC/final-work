@@ -50,31 +50,60 @@ def deteccion_color():
         # Aplicar un umbral adaptativo para separar las regiones de la imagen
         thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 2)
 
-        cv2.imwrite('imagen.jpg', thresh)
+        cv2.imwrite('./image_data/imagen.jpg', thresh)
 
-        binary_image = cv2.imread('imagen.jpg', cv2.IMREAD_GRAYSCALE)
+        #  Carga la imagen
+        binary_image = cv2.imread('./image_data/imagen.jpg', cv2.IMREAD_GRAYSCALE)
 
-        # Invertir los valores de los píxeles de la imagen binaria
-        inverted_image = cv2.bitwise_not(binary_image)
+        contador=0
+        sumar_area_no_deforestada = 0
 
-        # Contar el número de píxeles blancos (área de la región no deforestada)
-        non_deforested_area = cv2.countNonZero(inverted_image)
+        # Divide la imagen en cuadrantes
+        rows, cols = binary_image.shape
+        n = 2 # Cantidad de cuadrantes en cada dirección
+        size_r = rows // n
+        size_c = cols // n
+
+        for i in range(n):
+            for j in range(n):
+                contador+=1
+                # Recorta el cuadrante correspondiente
+                roi = binary_image[i*size_r:(i+1)*size_r, j*size_c:(j+1)*size_c]
+
+                # Aplica la ecualización del histograma
+                eq_roi = cv2.equalizeHist(roi)
+
+                # Guarda el cuadrante como una imagen separada
+                cv2.imwrite(f"./image_data/imagen{contador}.png", eq_roi)
+
+
+        i=1
+        while i<=4:
+        
+            img = cv2.imread(f'./image_data/imagen{i}.png', cv2.IMREAD_GRAYSCALE)
+
+            # Invertir los valores de los píxeles de la imagen binaria
+            inverted_image = cv2.bitwise_not(img)
+
+            # Contar el número de píxeles blancos (área de la región no deforestada)
+
+            non_deforested_area = cv2.countNonZero(inverted_image)
+
+            print(non_deforested_area)
+
+            sumar_area_no_deforestada += non_deforested_area
+            i+=1
 
         # Calcular el área total de la imagen
-        total_area = binary_image.shape[0] * binary_image   .shape[1]
-
-        # Calcular el área de la región deforestada
-        deforested_area = total_area - non_deforested_area
+        total_area = binary_image.shape[0] * binary_image.shape[1]
 
         # Imprimir los resultados
         lblInfo = Label(root, text="Porcentaje de deforestación", width=25)
         lblInfo.grid(column=0, row=5)
-        lblInfoDef = Label(root, text="% Área deforestada: " + str(round(deforested_area*100/total_area, 2)), width=25)
+        lblInfoDef = Label(root, text="% Área deforestada: " + str(round((total_area - sumar_area_no_deforestada)*100/total_area, 2)), width=25)
         lblInfoDef.grid(column=0, row=6)
-        print("% Área deforestada: ", deforested_area*100/total_area, " píxeles")
-        lblInfoNoDef = Label(root, text="% Área no deforestada: " + str(round(non_deforested_area*100/total_area, 2)), width=25)
+        lblInfoNoDef = Label(root, text="% Área no deforestada: " + str(round(sumar_area_no_deforestada*100/total_area, 2)), width=25)
         lblInfoNoDef.grid(column=0, row=7)
-        print("% Área no deforestada: ", non_deforested_area*100/total_area, " píxeles")
 
     # Para visualizar la imagen en lblOutputImage en la GUI
     im = Image.fromarray(thresh)
