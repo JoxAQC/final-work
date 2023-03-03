@@ -39,6 +39,13 @@ def elegir_imagen():
         # lblOutputImage.image = ""
         # selected.set(0)
 
+        # Label ¿Qué color te gustaría resaltar?
+        lblInfo2 = Label(root, text="Calcular deforestación", width=25)
+        lblInfo2.grid(column=0, row=3, padx=5, pady=5)
+
+        rad1 = Radiobutton(root, text='Segmentar imagen', width=25,value=1, variable=selected, command= deteccion_color)
+        rad1.grid(column=0, row=4)
+
 def deteccion_color():
     global image
     if selected.get() == 1:
@@ -127,14 +134,8 @@ lblInputImage.grid(column=0, row=2)
 lblOutputImage = Label(root)
 lblOutputImage.grid(column=1, row=1, rowspan=6)
 
-# Label ¿Qué color te gustaría resaltar?
-lblInfo2 = Label(root, text="Calcular deforestación", width=25)
-lblInfo2.grid(column=0, row=3, padx=5, pady=5)
-
 # Creamos los radio buttons y la ubicación que estos ocuparán
 selected = IntVar()
-rad1 = Radiobutton(root, text='Segmentar imagen', width=25,value=1, variable=selected, command= deteccion_color)
-rad1.grid(column=0, row=4)
 
 # Creamos el botón para elegir la imagen de entrada
 btn = Button(root, text="Elegir imagen", width=25, command=elegir_imagen)
