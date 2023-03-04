@@ -49,32 +49,23 @@ class App(customtkinter.CTk):
         self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 10))
 
         # create main entry and button
-        self.entry = customtkinter.CTkEntry(self, placeholder_text="Coordenada")
+        self.entry = customtkinter.CTkEntry(self, placeholder_text="Imagen Actual")
         self.entry.grid(row=3, column=1, columnspan=2, padx=(20, 0), pady=(20, 20), sticky="nsew")
 
-        self.main_button_1 = customtkinter.CTkButton(master=self, fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"))
+        self.main_button_1 = customtkinter.CTkButton(master=self, text="Reiniciar" ,fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"), command=self.restart)
         self.main_button_1.grid(row=3, column=3, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
         # create tabview
-        self.tabview = customtkinter.CTkTabview(self, width=250)
+        self.tabview = customtkinter.CTkScrollableFrame(self, label_text="Porcentaje de deforestación")
         self.tabview.grid(row=0, column=3, padx=(20, 0), pady=(20, 0), sticky="nsew")
-        self.tabview.add("CTkTabview")
-        self.tabview.add("Tab 2")
-        self.tabview.add("Tab 3")
-        self.tabview.tab("CTkTabview").grid_columnconfigure(0, weight=1)  # configure grid of individual tabs
-        self.tabview.tab("Tab 2").grid_columnconfigure(0, weight=1)
 
-        self.optionmenu_1 = customtkinter.CTkOptionMenu(self.tabview.tab("CTkTabview"), dynamic_resizing=False,
-                                                        values=["Value 1", "Value 2", "Value Long Long Long"])
+        self.optionmenu_1 = customtkinter.CTkButton(master=self.tabview, text="Area deforestada", hover=False, fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"))
         self.optionmenu_1.grid(row=0, column=0, padx=20, pady=(20, 10))
-        self.combobox_1 = customtkinter.CTkComboBox(self.tabview.tab("CTkTabview"),
-                                                    values=["Value 1", "Value 2", "Value Long....."])
-        self.combobox_1.grid(row=1, column=0, padx=20, pady=(10, 10))
-        self.string_input_button = customtkinter.CTkButton(self.tabview.tab("CTkTabview"), text="Open CTkInputDialog",
-                                                           command=self.open_input_dialog_event)
-        self.string_input_button.grid(row=2, column=0, padx=20, pady=(10, 10))
-        self.label_tab_2 = customtkinter.CTkLabel(self.tabview.tab("Tab 2"), text="CTkLabel on Tab 2")
-        self.label_tab_2.grid(row=0, column=0, padx=20, pady=20)
+        self.optionmenu_2 = customtkinter.CTkButton(master=self.tabview, text="Area no deforestada", hover=False, fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"))
+        self.optionmenu_2.grid(row=3, column=0, padx=20, pady=(20, 10))
+        # self.string_input_button = customtkinter.CTkButton(self.tabview.tab("CTkTabview"), text="Open CTkInputDialog",
+        #                                                    command=self.open_input_dialog_event)
+        # self.string_input_button.grid(row=2, column=0, padx=20, pady=(10, 10))
 
         # create slider and progressbar frame
         self.slider_progressbar_frame = customtkinter.CTkFrame(self, fg_color="transparent")
@@ -105,11 +96,10 @@ class App(customtkinter.CTk):
         # set default values
         self.sidebar_button_3.configure(state="disabled", text="Elegir una opcion")
         self.appearance_mode_optionemenu.set("Dark")
-        self.optionmenu_1.set("CTkOptionmenu")
-        self.combobox_1.set("CTkComboBox")
         segemented_button_var = customtkinter.StringVar(value="Segmentado")
         self.seg_button_1.configure(state="disabled",values=["Original", "Segmentado", "Textura 1", "Textura 2"], variable=segemented_button_var, command = self.mostrarImagen)
-        
+
+
     def mostrarImagen(self, value):
         if(self.seg_button_1.get() == "Original"):
             self.imagen(image)
@@ -133,8 +123,9 @@ class App(customtkinter.CTk):
     def sidebar_button_event(self):
         # Especificar los tipos de archivos, para elegir solo a las imágenes
         # Label donde se presentará la imagen de entrada
-        lblInputImage = Label(self.sidebar_frame)
-        lblInputImage.grid(column=0, row=4)
+        self.restart()
+        self.lblInputImage = Label(self.sidebar_frame)
+        self.lblInputImage.grid(column=0, row=4)
 
         path_image = filedialog.askopenfilename(filetypes = [
             ("image", ".jpeg"),
@@ -154,70 +145,81 @@ class App(customtkinter.CTk):
             im = Image.fromarray(imageToShow )
             img = ImageTk.PhotoImage(image=im)
 
+            self.lblInputImage.configure(image=img)
+            self.lblInputImage.image = img
+
+        self.sidebar_button_3.configure(state="enabled", text="Segmentar", hover=True)
+        self.entry.configure(placeholder_text=str(path_image))
+
+
+    def scrapper(self):
+        self.restart()
+        dialog = customtkinter.CTkInputDialog(text="Ingrese la coordenada:", title="Imagen por coordenada")
+        coordenada=dialog.get_input()
+        if (coordenada != ""):
+            web_side = f"https://earth.google.com/web/@{coordenada},231.39054421a,7639.99091354d,33.18759622y,0.28611967h,0t,0r"
+            path = "D:\Descargas\chromedriver.exe"
+
+            driver = webdriver.Chrome(service=Service(path))
+            driver.get(web_side)
+            driver.maximize_window()
+
+            time.sleep(8)
+
+            #Quitar nombres en blanco
+            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').shadowRoot.querySelector('#map-style').shadowRoot.querySelector('#icon').click();")
+            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector("#drawer-container").shadowRoot.querySelector("#mapstyle").shadowRoot.querySelector("#header-layout > aside > paper-radio-group > earth-radio-card:nth-child(1)").shadowRoot.querySelector("#card").click();')
+            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').shadowRoot.querySelector('#map-style').shadowRoot.querySelector('#icon').click();")
+
+            time.sleep(2)
+
+            #Ocultar elementos
+            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').style.display = 'none';")
+            time.sleep(2)
+            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements').style.display = 'none';")
+            time.sleep(2)
+            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements > earth-view-status').style.display = 'none';")
+            time.sleep(2)
+
+            #Tomar captura de pantalla
+            driver.get_screenshot_as_file("./image_data/screenshot.png")
+
+            # Especificar los tipos de archivos, para elegir solo a las imágenes
+            # Label donde se presentará la imagen de entrada
+            lblInputImage = Label(self.sidebar_frame)
+            lblInputImage.grid(column=0, row=4)
+
+            global image
+
+            # Leer la imagen de entrada y la redimensionamos
+            image = cv2.imread("./image_data/screenshot.png")
+            image= imutils.resize(image, height=380)
+
+            # Para visualizar la imagen de entrada en la GUI
+            imageToShow= imutils.resize(image, width=150)
+            imageToShow = cv2.cvtColor(imageToShow, cv2.COLOR_BGR2RGB)
+            im = Image.fromarray(imageToShow )
+            img = ImageTk.PhotoImage(image=im)
+
             lblInputImage.configure(image=img)
             lblInputImage.image = img
 
-        self.sidebar_button_3.configure(state="enabled", text="Segmentar")
+            self.sidebar_button_3.configure(state="enabled", text="Segmentar")
 
-    def scrapper(self):
-        coordenada = input("Ingrese la coordenada: ")
-        web_side = f"https://earth.google.com/web/@{coordenada},231.39054421a,7639.99091354d,33.18759622y,0.28611967h,0t,0r"
-        path = "D:\Descargas\chromedriver.exe"
-
-        driver = webdriver.Chrome(service=Service(path))
-        driver.get(web_side)
-        driver.maximize_window()
-
-        time.sleep(8)
-
-        #Quitar nombres en blanco
-        driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').shadowRoot.querySelector('#map-style').shadowRoot.querySelector('#icon').click();")
-        driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector("#drawer-container").shadowRoot.querySelector("#mapstyle").shadowRoot.querySelector("#header-layout > aside > paper-radio-group > earth-radio-card:nth-child(1)").shadowRoot.querySelector("#card").click();')
-        driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').shadowRoot.querySelector('#map-style').shadowRoot.querySelector('#icon').click();")
-
-        time.sleep(2)
-
-        #Ocultar elementos
-        driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').style.display = 'none';")
-        time.sleep(2)
-        driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements').style.display = 'none';")
-        time.sleep(2)
-        driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements > earth-view-status').style.display = 'none';")
-        time.sleep(2)
-
-        #Tomar captura de pantalla
-        driver.get_screenshot_as_file("./image_data/screenshot.png")
-
-        # Especificar los tipos de archivos, para elegir solo a las imágenes
-        # Label donde se presentará la imagen de entrada
-        lblInputImage = Label(self.sidebar_frame)
-        lblInputImage.grid(column=0, row=4)
-
-        global image
-
-        # Leer la imagen de entrada y la redimensionamos
-        image = cv2.imread("./image_data/screenshot.png")
-        image= imutils.resize(image, height=380)
-
-        # Para visualizar la imagen de entrada en la GUI
-        imageToShow= imutils.resize(image, width=150)
-        imageToShow = cv2.cvtColor(imageToShow, cv2.COLOR_BGR2RGB)
-        im = Image.fromarray(imageToShow )
-        img = ImageTk.PhotoImage(image=im)
-
-        lblInputImage.configure(image=img)
-        lblInputImage.image = img
-
-        self.sidebar_button_3.configure(state="enabled", text="Segmentar")
+            self.entry.configure(placeholder_text=str(coordenada))
         
 
     def segmentate(self):
+        self.sidebar_button_3.configure(state="disabled", text="Segmentado")
         self.seg_button_1.configure(state="enabled")
         global image
         global img_segmentada
         global img_binaria
         global texture
         img = image
+
+        self.lblOutputImage = Label(self, width=490)
+        self.lblOutputImage.grid(column=1, row=0, rowspan=2, columnspan=2)
 
         # Convertimos la imagen de BGR a HSV
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -309,6 +311,10 @@ class App(customtkinter.CTk):
 
         self.imagen(img_segmentada)
 
+        self.lblinfo1 = customtkinter.CTkLabel(master=self.tabview, text="{:.2f}%".format(deforested_percent))
+        self.lblinfo1.grid(row=1, column=0)
+        self.lblinfo2 = customtkinter.CTkLabel(master=self.tabview, text="{:.2f}%".format(non_deforested_percent))
+        self.lblinfo2.grid(row=4, column=0)
         # # Imprimir los resultados
         # self.seg_button_1.configure(values=["Porcentaje de área", "Área deforestada: {:.2f}%".format(deforested_percent), "Área no deforestada: {:.2f}%".format(non_deforested_percent)])
 
@@ -319,14 +325,30 @@ class App(customtkinter.CTk):
 
     def imagen(self,imagen):
         # Label donde se presentará la imagen de salida
-        lblOutputImage = Label(self, width=490)
-        lblOutputImage.grid(column=1, row=0, rowspan=2, columnspan=2)
         # Para visualizar la imagen en lblOutputImage en la GUI
         imagen = cv2.cvtColor(imagen, cv2.COLOR_BGR2RGB)
         im = Image.fromarray(imagen)
         img = ImageTk.PhotoImage(image=im)
-        lblOutputImage.configure(image=img)
-        lblOutputImage.image = img
+        self.lblOutputImage.configure(image=img)
+        self.lblOutputImage.image = img
+
+    def restart(self):
+        self.sidebar_button_3.configure(state="disabled", text="Elegir una opción")
+        self.entry.configure(placeholder_text="Imagen Actual")
+        self.seg_button_1.configure(state="disabled")
+        segemented_button_var = customtkinter.StringVar(value="Segmentado")
+        self.seg_button_1.configure(state="disabled",values=["Original", "Segmentado", "Textura 1", "Textura 2"], variable=segemented_button_var, command = self.mostrarImagen)
+
+        try:
+            self.lblInputImage.destroy()
+            self.lblOutputImage.destroy()
+            self.lblinfo1.destroy()
+            self.lblinfo2.destroy()
+        except AttributeError:
+            pass
+        except ValueError:
+            pass
+
 
 if __name__ == "__main__":
     app = App()
