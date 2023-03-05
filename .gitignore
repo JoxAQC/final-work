@@ -1,5 +1,6 @@
 image_data/*.jpg
 image_data/*.png
+image_data/*.obj
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

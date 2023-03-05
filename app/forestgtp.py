@@ -11,6 +11,12 @@ import numpy as np
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 import time
+import meshio
+import os
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from mayavi import mlab
+import subprocess
 
 
 customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
@@ -80,18 +86,8 @@ class App(customtkinter.CTk):
         self.scrollable_frame.grid(row=1, column=3, padx=(20, 0), pady=(20, 0), sticky="nsew")
         self.scrollable_frame.grid_columnconfigure(0, weight=1)
         self.scrollable_frame_switches = []
-        switch = customtkinter.CTkSwitch(master=self.scrollable_frame, text="a")
-        switch.grid(row=1, column=0, padx=10, pady=(0, 20))
-        self.scrollable_frame_switches.append(switch)
-        switch = customtkinter.CTkSwitch(master=self.scrollable_frame, text="b")
-        switch.grid(row=2, column=0, padx=10, pady=(0, 20))
-        self.scrollable_frame_switches.append(switch)
-        switch = customtkinter.CTkSwitch(master=self.scrollable_frame, text="c")
-        switch.grid(row=3, column=0, padx=10, pady=(0, 20))
-        self.scrollable_frame_switches.append(switch)
-        switch = customtkinter.CTkSwitch(master=self.scrollable_frame, text="d")
-        switch.grid(row=4, column=0, padx=10, pady=(0, 20))
-        self.scrollable_frame_switches.append(switch)
+        self.switch = customtkinter.CTkButton(master=self.scrollable_frame, text="Imagen 3D", command=self.Imagen3D, state="disabled")
+        self.switch.grid(row=1, column=0, padx=10, pady=(0, 20))
 
         # set default values
         self.sidebar_button_3.configure(state="disabled", text="Elegir una opcion")
@@ -142,8 +138,12 @@ class App(customtkinter.CTk):
         dialog = customtkinter.CTkInputDialog(text="Ingrese la coordenada:", title="Imagen por coordenada")
         coordenada=dialog.get_input()
         if (coordenada != ""):
-            web_side = f"https://earth.google.com/web/@{coordenada},231.39054421a,7639.99091354d,33.18759622y,0.28611967h,0t,0r"
-            path = "D:\Descargas\chromedriver.exe"
+            dialog2 = customtkinter.CTkInputDialog(text="Ingrese los kilometros:", title="Imagen por coordenada")
+            kilometros=dialog2.get_input()
+        if (coordenada != "" and kilometros!=""):
+            kilometros = (float(kilometros) - 0.5) * 1000
+            web_side = f"https://earth.google.com/web/@{coordenada},500a,{kilometros}d,35y,0h,0t,0r"
+            path = "C:\Program Files (x86)\chromedriver.exe"
 
             driver = webdriver.Chrome(service=Service(path))
             driver.get(web_side)
@@ -151,23 +151,35 @@ class App(customtkinter.CTk):
 
             time.sleep(8)
 
-            #Quitar nombres en blanco
-            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').shadowRoot.querySelector('#map-style').shadowRoot.querySelector('#icon').click();")
-            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector("#drawer-container").shadowRoot.querySelector("#mapstyle").shadowRoot.querySelector("#header-layout > aside > paper-radio-group > earth-radio-card:nth-child(1)").shadowRoot.querySelector("#card").click();')
-            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').shadowRoot.querySelector('#map-style').shadowRoot.querySelector('#icon').click();")
+            # Quitar nombres en blanco
+            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector("
+                                "'#toolbar').shadowRoot.querySelector('#map-style').shadowRoot.querySelector('#icon').click();")
+            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector('
+                                '"#drawer-container").shadowRoot.querySelector("#mapstyle").shadowRoot.querySelector('
+                                '"#header-layout > aside > paper-radio-group > earth-radio-card:nth-child('
+                                '1)").shadowRoot.querySelector("#card").click();')
+            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector("
+                                "'#toolbar').shadowRoot.querySelector('#map-style').shadowRoot.querySelector('#icon').click();")
 
             time.sleep(2)
 
-            #Ocultar elementos
-            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').style.display = 'none';")
+            # Ocultar elementos
+            driver.execute_script(
+                "document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').style.display "
+                "= 'none';")
             time.sleep(2)
-            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements').style.display = 'none';")
+            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector("
+                                "'#earth-relative-elements').style.display = 'none';")
             time.sleep(2)
-            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements > earth-view-status').style.display = 'none';")
+            driver.execute_script(
+                "document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements "
+                "> earth-view-status').style.display = 'none';")
             time.sleep(2)
 
-            #Tomar captura de pantalla
+            # Tomar captura de pantalla
             driver.get_screenshot_as_file("./image_data/screenshot.png")
+
+            driver.quit()
 
             self.imagenInput("./image_data/screenshot.png")
          
@@ -199,6 +211,7 @@ class App(customtkinter.CTk):
         
 
     def segmentate(self):
+        self.switch.configure(state="enabled")
         self.sidebar_button_3.configure(state="disabled", text="Segmentado")
         self.seg_button_1.configure(state="enabled")
         global image
@@ -315,6 +328,11 @@ class App(customtkinter.CTk):
     def imagen(self,imagen):
         # Label donde se presentará la imagen de salida
         # Para visualizar la imagen en lblOutputImage en la GUI
+        array = np.array(imagen)
+        h, w, d = array.shape
+        print(w)
+        if(int(w)>500):
+            imagen= imutils.resize(imagen, height=250)
         imagen = cv2.cvtColor(imagen, cv2.COLOR_BGR2RGB)
         im = Image.fromarray(imagen)
         img = ImageTk.PhotoImage(image=im)
@@ -327,6 +345,7 @@ class App(customtkinter.CTk):
         self.seg_button_1.configure(state="disabled")
         segemented_button_var = customtkinter.StringVar(value="Segmentado")
         self.seg_button_1.configure(state="disabled",values=["Original", "Segmentado", "Textura 1", "Textura 2"], variable=segemented_button_var, command = self.mostrarImagen)
+        self.switch.configure(text="Imagen 3D", state="disabled")
 
         try:
             self.lblInputImage.destroy()
@@ -337,6 +356,57 @@ class App(customtkinter.CTk):
             pass
         except ValueError:
             pass
+
+    def Imagen3D(self):
+        self.sidebar_button_3.configure(state="disabled", text="Segmentado")
+        self.seg_button_1.configure(state="enabled")
+
+        # Cargar imagen
+        img = image
+
+        # Convertir imagen a matriz numpy
+        imagen = np.array(img)
+
+        # Obtener dimensiones de la imagen
+        h, w, d = imagen.shape
+
+        # Crear malla de coordenadas X, Y y Z
+        x, y = np.meshgrid(np.arange(w), np.arange(h))
+        z = imagen[:,:,0].astype(float) / 255
+
+        # Crear matriz de vértices
+        vertices = np.column_stack((x.flatten(), y.flatten(), z.flatten()))
+
+        # Crear matriz de caras
+        n_verts = h * w
+        rows = np.tile(np.arange(w-1), (h-1,1)) + np.repeat(np.arange(h-1)[:,np.newaxis]*w, w-1, axis=1)
+        faces = np.concatenate((np.column_stack((rows.flatten(), rows.flatten()+w, rows.flatten()+w+1)), np.column_stack((rows.flatten(), rows.flatten()+w+1, rows.flatten()+1)))).astype(int)
+
+        # Crear objeto Mesh y guardar en formato .obj
+        mesh = meshio.Mesh(points=vertices, cells=[("triangle", faces)])
+        meshio.write('./image_data/imagen3d.obj', mesh, file_format='obj')
+
+        # Crear figura y ejes 3D
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Visualizar imagen utilizando la función plot_surface
+        surf = ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap='viridis', facecolors=plt.cm.viridis(z))
+
+        # Configurar ejes y título
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.set_title('Imagen en 3D')
+
+        # Agregar barra de colores
+        fig.colorbar(surf)
+
+        #Abrir figura en Visor 3D
+        os.system("./image_data/imagen3d.obj")
+
+        # Mostrar figura
+        plt.show()
 
 
 if __name__ == "__main__":
