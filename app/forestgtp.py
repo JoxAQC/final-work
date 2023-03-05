@@ -328,7 +328,7 @@ class App(customtkinter.CTk):
     def imagen(self,imagen):
         # Label donde se presentará la imagen de salida
         # Para visualizar la imagen en lblOutputImage en la GUI
-        array = np.array(imagen)
+        array = np.array(image)
         h, w, d = array.shape
         print(w)
         if(int(w)>500):
