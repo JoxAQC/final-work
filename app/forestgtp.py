@@ -10,6 +10,7 @@ import imutils
 import numpy as np
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
 import time
 import meshio
 import os
@@ -40,7 +41,7 @@ class App(customtkinter.CTk):
         self.sidebar_frame = customtkinter.CTkFrame(self, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
-        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="ForestGTP", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="ForestP", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
         self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, text="Ingresar imagen", command=self.sidebar_button_event)
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
@@ -134,6 +135,7 @@ class App(customtkinter.CTk):
 
 
     def scrapper(self):
+        global area
         self.restart()
         dialog = customtkinter.CTkInputDialog(text="Ingrese la coordenada:", title="Imagen por coordenada")
         coordenada=dialog.get_input()
@@ -142,6 +144,7 @@ class App(customtkinter.CTk):
             kilometros=dialog2.get_input()
         if (coordenada != "" and kilometros!=""):
             kilometros = (float(kilometros) - 0.5) * 1000
+
             web_side = f"https://earth.google.com/web/@{coordenada},500a,{kilometros}d,35y,0h,0t,0r"
             path = "C:\Program Files (x86)\chromedriver.exe"
 
@@ -163,18 +166,56 @@ class App(customtkinter.CTk):
 
             time.sleep(2)
 
-            # Ocultar elementos
-            driver.execute_script(
-                "document.querySelector('body > earth-app').shadowRoot.querySelector('#toolbar').style.display "
-                "= 'none';")
-            time.sleep(2)
-            driver.execute_script("document.querySelector('body > earth-app').shadowRoot.querySelector("
-                                "'#earth-relative-elements').style.display = 'none';")
-            time.sleep(2)
+            # Obtener las dimensiones de la ventana del navegador
+            window_size = driver.execute_script("return [window.outerWidth, window.outerHeight];")
+
+            #
+
+            #CLic para medir
+            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector('
+                                '"#toolbar").shadowRoot.querySelector("#measure").shadowRoot.querySelector("#icon").click();')
+            #Ocultar barra lateral
+            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector("#toolbar").style.display '
+                                '= "none";')
+
+            #Ocultar barra de abajo
+            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector("#earth-relative-elements '
+                                '> earth-view-status").style.display = "none";')
+
             driver.execute_script(
                 "document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements "
                 "> earth-view-status').style.display = 'none';")
             time.sleep(2)
+
+            #Hacer clic en la esquina superior izquierda
+            actions = ActionChains(driver)
+            actions.move_by_offset(0, 0).click().perform()
+            time.sleep(2)
+            # Hacer clic en la esquina superior derecha
+            actions = ActionChains(driver)
+            actions.move_by_offset(1919, 0).click().perform()
+            time.sleep(2)
+            #Calcular distancia en X
+
+            time.sleep(2)
+            distanciaX = driver.execute_script('return document.querySelector("body > earth-app").shadowRoot.querySelector('
+                                            '"#measure-tool").shadowRoot.querySelector("#formatted-distance").innerText;')
+
+            distanciaX = distanciaX.replace('.', '')
+            distanciaX = distanciaX.replace(',', '.')
+            if "km" in distanciaX:
+                distanciaX = distanciaX.replace("km", '')
+            else:
+                distanciaX = distanciaX.replace("m", '')
+            distanciaX = float(distanciaX)
+
+            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector('
+                                '"#measure-tool").shadowRoot.querySelector("#close-button").shadowRoot.querySelector('
+                                '"#icon").click();')
+
+            distanciaY = distanciaX*49/96
+
+            area = distanciaY * distanciaX
 
             # Tomar captura de pantalla
             driver.get_screenshot_as_file("./image_data/screenshot.png")
@@ -312,14 +353,22 @@ class App(customtkinter.CTk):
         total_area = binary_image.shape[0] * binary_image.shape[1]
 
         self.imagen(img_segmentada)
+        try:
+            self.lblinfo1 = customtkinter.CTkLabel(master=self.tabview, text="({:.2f}%)".format(deforested_percent) + " " + "{:.2f}".format(area*deforested_percent) +" km2")
+            self.lblinfo1.grid(row=1, column=0)
+            self.lblinfo2 = customtkinter.CTkLabel(master=self.tabview, text="({:.2f}%)".format(non_deforested_percent) + " " + "{:.2f}".format(area*non_deforested_percent) +" km2")
+            self.lblinfo2.grid(row=4, column=0)
+        except NameError:
+            self.lblinfo1 = customtkinter.CTkLabel(master=self.tabview, text="{:.2f}%".format(deforested_percent))
+            self.lblinfo1.grid(row=1, column=0)
+            self.lblinfo2 = customtkinter.CTkLabel(master=self.tabview, text="{:.2f}%".format(non_deforested_percent))
+            self.lblinfo2.grid(row=4, column=0)
 
-        self.lblinfo1 = customtkinter.CTkLabel(master=self.tabview, text="{:.2f}%".format(deforested_percent))
-        self.lblinfo1.grid(row=1, column=0)
-        self.lblinfo2 = customtkinter.CTkLabel(master=self.tabview, text="{:.2f}%".format(non_deforested_percent))
-        self.lblinfo2.grid(row=4, column=0)
+        
         # # Imprimir los resultados
         # self.seg_button_1.configure(values=["Porcentaje de área", "Área deforestada: {:.2f}%".format(deforested_percent), "Área no deforestada: {:.2f}%".format(non_deforested_percent)])
 
+    area = None
     image = None
     img_segmentada = None
     img_binaria = None
