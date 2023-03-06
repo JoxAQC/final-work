@@ -178,13 +178,6 @@ class App(customtkinter.CTk):
             driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector("#toolbar").style.display '
                                 '= "none";')
 
-            #Ocultar barra de abajo
-            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector("#earth-relative-elements '
-                                '> earth-view-status").style.display = "none";')
-
-            driver.execute_script(
-                "document.querySelector('body > earth-app').shadowRoot.querySelector('#earth-relative-elements "
-                "> earth-view-status').style.display = 'none';")
             time.sleep(2)
 
             #Hacer clic en la esquina superior izquierda
@@ -216,6 +209,9 @@ class App(customtkinter.CTk):
             distanciaY = distanciaX*49/96
 
             area = distanciaY * distanciaX
+
+            print("El area del terreno es: ",area)
+            driver.execute_script('document.querySelector("body > earth-app").shadowRoot.querySelector("#earth-relative-elements").style.display = "none";')
 
             # Tomar captura de pantalla
             driver.get_screenshot_as_file("./image_data/screenshot.png")
